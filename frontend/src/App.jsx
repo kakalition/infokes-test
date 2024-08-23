@@ -301,11 +301,26 @@ function App() {
         <Item onClick={(data) => newObjectContextHandler(data, "FOLDER")}>
           New Folder
         </Item>
-        <Item onClick={(data) => newObjectContextHandler(data, "FILE")}>
+        <Item 
+          onClick={(data) => newObjectContextHandler(data, "FILE")}
+          hidden={({props}) => {
+            console.log(props);
+            return props.id == null;
+          }}
+        >
           New File
         </Item>
         <Item hidden={() => cutCopyPasteObject == null} onClick={pasteObjectContextHandler}>
           Paste
+        </Item>
+        <Item 
+          onClick={deleteObjectContextHandler}
+          hidden={({props}) => {
+            console.log(props);
+            return props.id == null;
+          }}
+        >
+          Delete
         </Item>
       </Menu>
 
