@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\File;
 use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,8 +85,33 @@ class FolderController extends Controller
 
   public function destroy(Folder $folder)
   {
-    $folder->delete();
+    $id = $folder->id;
+
+    DB::transaction(function () use ($folder, $id) {
+      $folder->delete();
+      $this->deleteRecursively($id);
+    });
 
     return response(null, 204);
+  }
+
+  private function deleteRecursively($rootId)
+  {
+    $folders = Folder::where("parent_id", "=", $rootId)->get();
+    $files = File::where("parent_id", "=", $rootId)->get();
+    $children = [...$folders, ...$files];
+
+    foreach ($children as $child) {
+      if ($child instanceof File) {
+        $child->delete();
+      }
+
+      if ($child instanceof Folder) {
+        $id = $child->id;
+        $child->delete();
+
+        $this->deleteRecursively($id);
+      }
+    }
   }
 }

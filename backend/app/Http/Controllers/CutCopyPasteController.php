@@ -20,19 +20,33 @@ class CutCopyPasteController extends Controller
     ]);
 
     $object = File::find($data['target_id']);
+    $type = "FILE";
     if ($object == null) {
       $object = Folder::find($data['target_id']);
+      $type = "FOLDER";
     }
 
     if ($data['action'] == "CUT") {
-      $object = $this->cutFile($object, $data['destination_id']);
+      $object = $this->cutFileOrFolder($object, $data['destination_id']);
     }
 
-    if ($data['action'] == "COPY") {
+    if ($data['action'] == "COPY" && $type == "FILE") {
       $object = $this->copyFile($object, $data['destination_id']);
     }
 
+    if ($data['action'] == "COPY" && $type == "FOLDER") {
+      $object = $this->copyFolderRecursively($object, $data['destination_id']);
+    }
+
     return response($object, 200);
+  }
+
+  private function cutFileOrFolder($file, $destinationId)
+  {
+    $file->parent_id = $destinationId;
+    $file->save();
+
+    return $file;
   }
 
   private function copyFile($file, $destinationId)
@@ -59,11 +73,49 @@ class CutCopyPasteController extends Controller
     return $clone;
   }
 
-  private function cutFile($file, $destinationId)
+  private function copyFolderRecursively($folder, $destinationId)
   {
-    $file->parent_id = $destinationId;
-    $file->save();
+    $root = null;
+    DB::transaction(function () use ($folder, $destinationId, $root) {
+      $oldId = $folder->id;
+      $newId = Uuid::uuid4();
 
-    return $file;
+      $root = $folder->replicate();
+      $root->id = $newId;
+      $root->parent_id = $destinationId;
+      $root->save();
+
+      $this->copyRecursively($oldId, $newId);
+    });
+
+    return $root;
+  }
+
+  private function copyRecursively($oldParentId, $newParentId)
+  {
+    $folders = Folder::where("parent_id", "=", $oldParentId)->get();
+    $files = File::where("parent_id", "=", $oldParentId)->get();
+    $children = [...$folders, ...$files];
+
+    foreach ($children as $child) {
+      if ($child instanceof File) {
+        $clone = $child->replicate();
+        $clone->id = Uuid::uuid4();
+        $clone->parent_id = $newParentId;
+        $clone->save();
+      }
+
+      if ($child instanceof Folder) {
+        $oldChildId = $child->id;
+        $newChildId = Uuid::uuid4();
+
+        $clone = $child->replicate();
+        $clone->id = $newChildId;
+        $clone->parent_id = $newParentId;
+        $clone->save();
+
+        $this->copyRecursively($oldChildId, $newChildId);
+      }
+    }
   }
 }
