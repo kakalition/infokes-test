@@ -4,10 +4,16 @@ import {DndContext} from '@dnd-kit/core';
 import Draggable from './dnd/draggable';
 import IconFolder from './icons/folder';
 import Droppable from './dnd/droppable';
+import * as EventEmitter from "../event_emitter.js";
 
 export default function FileTiles({onDragEnd, rightPaneFiles, onItemDoubleClicked, onContextMenu}) {
   function getFileExtension(filename) {
     return filename.split('.').pop(); 
+  }
+
+  function onDoubleClick(item) {
+    onItemDoubleClicked(item);
+    EventEmitter.emitter.emit(EventEmitter.ON_FOLDER_OPEN, item.id);
   }
 
   return (
@@ -35,7 +41,7 @@ export default function FileTiles({onDragEnd, rightPaneFiles, onItemDoubleClicke
             <div key={item.id} 
               className="col-span-2 aspect-[1/1.2]" 
               onContextMenu={(e) => onContextMenu({event: e, props: item})} 
-              onDoubleClick={() => onItemDoubleClicked(item)}>
+              onDoubleClick={() => onDoubleClick(item)}>
               {nameElement}
             </div>
           );

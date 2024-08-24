@@ -8,8 +8,14 @@ import Draggable from './dnd/draggable';
 import IconFolder from './icons/folder';
 import IconFile from './icons/file';
 import Droppable from './dnd/droppable';
+import * as EventEmitter from '../event_emitter.js';
 
 export default function FileTable({onDragEnd, rightPaneFiles, onItemDoubleClicked, onContextMenu}) {
+  function onDoubleClick(item) {
+    onItemDoubleClicked(item);
+    EventEmitter.emitter.emit(EventEmitter.ON_FOLDER_OPEN, item.id);
+  }
+
   return (
     <DndContext onDragEnd={onDragEnd}>
       <Table aria-label="Current folders" className='w-full'>
@@ -35,7 +41,7 @@ export default function FileTable({onDragEnd, rightPaneFiles, onItemDoubleClicke
             return (
               <TableRow key={item.id} 
                 className='cursor-pointer select-none transition hover:bg-gray-100' 
-                onDoubleClick={() => onItemDoubleClicked(item)} 
+                onDoubleClick={() => onDoubleClick(item)} 
                 onContextMenu={(e) => onContextMenu({event: e, props: item})}
               >
                 <TableCell>

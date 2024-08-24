@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import "react-contexify/dist/ReactContexify.css";
 import IconChevronRight from './icons/chevron_right.jsx';
 import IconChevronDown from './icons/chevron_down.jsx';
 import FileHandler from '../file_handler.js';
+import * as EventEmitter from '../event_emitter.js';
 
 export default function LeftPane({data, onBackgroundContextMenu, onItemContextMenu, rightPaneId, onRightPaneIdChange}) {
   const fileHandler = new FileHandler();
@@ -33,7 +34,7 @@ export default function LeftPane({data, onBackgroundContextMenu, onItemContextMe
 
   return <div className='flex h-full w-96 select-none flex-col overflow-y-scroll border-r-2 border-r-gray-200  p-2' 
     onContextMenu={(e) => onBackgroundContextMenu({event: e, props: {id: null}})}
-    onDoubleClick={() => onRightPaneIdChange(null)}
+    // onDoubleClick={() => onRightPaneIdChange(null)}
   >
     {leftPaneElements}
   </div>
@@ -42,10 +43,30 @@ export default function LeftPane({data, onBackgroundContextMenu, onItemContextMe
 function LeftPaneItem({folder, level, rightPaneId, onRightPaneIdChange, onItemContextMenu, children}) {
   const [hide, setHide] = useState(true)
 
+  useEffect(() => {
+    const onFolderOpen = (id) => {
+      console.log('folder', folder)
+      if (id == folder.id) {
+        setHide(false);
+      }
+    }
+
+    EventEmitter.emitter.on(EventEmitter.ON_FOLDER_OPEN, onFolderOpen);
+
+    return () => {
+      EventEmitter.emitter.off(EventEmitter.ON_FOLDER_OPEN, onFolderOpen);
+    }
+  }, []);
+
+  function onDoubleClick(id) {
+    onRightPaneIdChange(id)
+    setHide(false);
+  }
+
   return (<div>
     <div style={{ paddingLeft: `${level * 12}px` }}
       className={`flex cursor-pointer flex-row gap-2 rounded-xl ${rightPaneId == folder.id ? "bg-gray-200" : "bg-gray-50"} p-2 transition hover:bg-gray-200`}
-      onClick={() => onRightPaneIdChange(folder.id)}
+      onDoubleClick={() => onDoubleClick(folder.id)}
       onContextMenu={(e) => onItemContextMenu({ event: e, props: folder })}
     >
       <button type='button' 
