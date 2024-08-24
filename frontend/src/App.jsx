@@ -310,13 +310,20 @@ function App() {
         >
           New File
         </Item>
+        <Item 
+          onClick={renameObjectContextHandler}
+          hidden={({props}) => {
+            return props.id == null;
+          }}
+        >
+          Rename
+        </Item>
         <Item hidden={() => cutCopyPasteObject == null} onClick={pasteObjectContextHandler}>
           Paste
         </Item>
         <Item 
           onClick={deleteObjectContextHandler}
           hidden={({props}) => {
-            console.log(props);
             return props.id == null;
           }}
         >
